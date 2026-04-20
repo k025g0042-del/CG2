@@ -3,6 +3,10 @@
 #include<cstdint>
 #include<string>
 #include<format>
+#include<filesystem>
+#include<fstream>
+#include<chrono>
+#include <iostream>
 
 //ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -51,8 +55,43 @@ std::string ConvertString(const std::wstring& str) {
 	return result;
 }
 
+//現在時刻でのログファイル生成
+void LogFileCreate() {
+	//現在時刻を取得(UTC時刻)
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+
+	//ログファイルの名前にコンマ秒は不要なため、削って秒にする
+	std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
+		nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+
+
+	//日本時間(PCの設定時間)に変換
+	std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
+
+	//formatを使って年月日_時分秒の文字列に変換
+	std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+
+	//時刻を使ってファイル名を決定
+	std::string logFilePath = std::string("logs/") + dateString + ".log";
+
+	//ファイルを作って書き込み準備
+	std::ofstream logStream(logFilePath);
+}
+
+//ログをファイルに書き出す
+void Log(std::ostream& os, const std::string& message) {
+	os << message << std::endl;
+	OutputDebugStringA(message.c_str());
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
+
+	//ログのディレクトリを用意
+	std::filesystem::create_directory("logs");
+
+	//ログファイル生成
+	LogFileCreate();
 
 	// 出力ウィンドウへの文字出力
 	OutputDebugStringA("Hello,DirectX!\n");
@@ -96,8 +135,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		wrc.right-wrc.left,
-		wrc.bottom-wrc.top,
+		wrc.right - wrc.left,
+		wrc.bottom - wrc.top,
 		nullptr,
 		nullptr,
 		wc.hInstance,
@@ -105,6 +144,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//ウィンドウを表示する
 	ShowWindow(hwnd, SW_SHOW);
+
+	//ログ記録
+	Log("Window Create!\n");
 
 	//メインループ
 	MSG msg{};

@@ -363,7 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 *.log
-/log
+/logs
 
 *.dmp
 Dumps/

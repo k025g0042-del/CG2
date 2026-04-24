@@ -261,7 +261,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	ShowWindow(hwnd, SW_SHOW);
 
 	//ログ記録
-	Log(std::cout,"Window Create!\n");
+	Log(logStream,"Window Create!\n");
 
 	//メインループ
 	MSG msg{};

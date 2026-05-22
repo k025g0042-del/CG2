@@ -6,6 +6,11 @@ struct Vector3 {
 	float z;
 };
 
+struct Vector2 {
+	float x;
+	float y;
+};
+
 class Vector {
 private:
 	static const int kColumnWidth = 60;

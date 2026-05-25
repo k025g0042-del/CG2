@@ -941,6 +941,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//カメラを作る
 	Transform cameraTransform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} };
 
+	//テクスチャ名の変数作成
+	const char* textureName = "uvChecker";
+
 	//Textureを読んで転送する
 	DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
@@ -1001,10 +1004,23 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			ImGui::NewFrame();
 
 			//開発用UIの処理
-			ImGui::ShowDemoWindow();
+			ImGui::Begin("Window");
+			ImGui::ColorEdit3("color", &materialData->x);
+			ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
+			ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
+			ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
+			
+			if (ImGui::BeginCombo("texture", textureName)) {
+				ImGui::Selectable("uvChecker");
+
+				if (ImGui::IsItemActive()) {
+					textureName = "uvChecker";
+				}
+			}
+
+			ImGui::End();
 #endif // USE_IMGUI
 
-			transform.rotate.y += 0.03f;
 			Matrix4x4 worldMatrix = Matrix::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			Matrix4x4 cameraMatrix = Matrix::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
 			Matrix4x4 viewMatrix = Matrix::Inverse(cameraMatrix);

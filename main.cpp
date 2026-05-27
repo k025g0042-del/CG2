@@ -342,13 +342,6 @@ ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMe
 
 	//細かい設定を行う
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-	//WriteBackポリシーでCPUアクセス可能
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
-
-	//プロセッサの近くに配置
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
-
 	//Resourceを生成する
 	ID3D12Resource* resource = nullptr;
 
@@ -1171,6 +1164,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	wvpResource->Release();
 	mipImages.Release();
 	textureResource->Release();
+	intermediateResource->Release();
 
 	//リソースチェック
 	IDXGIDebug1* debug;

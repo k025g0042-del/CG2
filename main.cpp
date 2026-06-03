@@ -955,7 +955,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	const uint32_t kSubdivision = 16;
 
 	//頂点リソースを作る
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6 * kSubdivision * kSubdivision);
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 3);
 
 	//頂点バッファビューを作成する
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
@@ -987,6 +987,23 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
 	vertexData[2].texcoord = { 1.0f,1.0f };
 
+	//二枚めの三角形の生成
+	ID3D12Resource* vertexResourceTriangle = CreateBufferResource(device, sizeof(VertexData) * 3);
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewTriangle{};
+	vertexBufferViewTriangle.BufferLocation = vertexResourceTriangle->GetGPUVirtualAddress();
+	vertexBufferViewTriangle.SizeInBytes = sizeof(VertexData) * 3;
+	vertexBufferViewTriangle.StrideInBytes = sizeof(VertexData);
+	VertexData* vertexDataTriangle = nullptr;
+	vertexResourceTriangle->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataTriangle));
+
+	vertexDataTriangle[0].position = { -0.5f,-0.5f,0.5f,1.0f };
+	vertexDataTriangle[0].texcoord = { 0.0f,1.0f };
+	vertexDataTriangle[1].position = { 0.0f,0.0f,0.0f,1.0f };
+	vertexDataTriangle[1].texcoord = { 0.5f,0.0f };
+	vertexDataTriangle[2].position = { 0.5f,-0.5f,-0.5f,1.0f };
+	vertexDataTriangle[2].texcoord = { 1.0f,1.0f };
+
+
 	//マテリアル用のリソースを作る。今回はcolor１つ分のサイズを用意する
 	ID3D12Resource* materialResource = CreateBufferResource(device, sizeof(Vector4));
 
@@ -1012,16 +1029,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	*wvpData = Matrix::MakeIdentity4x4();
 
 	//Sprite用のTransformationMatrix用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
-	ID3D12Resource* transformationMatrixResourceSprite = CreateBufferResource(device, sizeof(Matrix4x4));
+	ID3D12Resource* transformationMatrixResourceTriangle = CreateBufferResource(device, sizeof(Matrix4x4));
 
 	//データを書き込む
-	Matrix4x4* transformationMatrixDataSprite = nullptr;
+	Matrix4x4* transformationMatrixDataTriangle = nullptr;
 
 	//書き込むためのアドレスを取得
-	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
+	transformationMatrixResourceTriangle->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataTriangle));
 
 	//単位行列を書き込んで置く
-	*transformationMatrixDataSprite = Matrix::MakeIdentity4x4();
+	*transformationMatrixDataTriangle = Matrix::MakeIdentity4x4();
 
 	//DepthStencilTextureをウィンドウのサイズで作成
 	ID3D12Resource* depthStencilResource = CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
@@ -1063,10 +1080,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//Transform変数を作る
 	Transform transform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
-	Transform transformSprite = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+	Transform transformTriangle = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 	//カメラを作る
-	Transform cameraTransform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-10.0f} };
+	Transform cameraTransform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} };
 
 	//テクスチャ名の変数作成
 	const char* textureName = "uvChecker";
@@ -1156,7 +1173,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
 			ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
 			ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
-			
+
+			ImGui::DragFloat3("Scale", &transformTriangle.scale.x, 0.01f);
+			ImGui::DragFloat3("Rotate", &transformTriangle.rotate.x, 0.01f);
+			ImGui::DragFloat3("translate", &transformTriangle.translate.x, 0.01f);
+
 			if (ImGui::BeginCombo("texture", textureName)) {
 				ImGui::Selectable("uvChecker");
 
@@ -1185,12 +1206,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			*wvpData = worldViewProjectionMatrix;
 
-			//Sprute用のWorldViewProjectionMatrixを作る
-			Matrix4x4 worldMatrixSprite = Matrix::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
-			Matrix4x4 viewMatrixSprite = Matrix::MakeIdentity4x4();
-			Matrix4x4 projectionMatrixSprite = Matrix::MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
-			Matrix4x4 worldViewProjectionMatrixSprite = Matrix::Multiply(worldMatrixSprite, Matrix::Multiply(viewMatrixSprite, projectionMatrixSprite));
-			*transformationMatrixDataSprite = worldViewProjectionMatrixSprite;
+			Matrix4x4 worldMatrixTriangle = Matrix::MakeAffineMatrix(transformTriangle.scale, transformTriangle.rotate, transformTriangle.translate);
+			Matrix4x4 worldViewProjectionMatrixTriangle = Matrix::Multiply(worldMatrixTriangle, Matrix::Multiply(viewMatrix, projectionMatrix));
+			*transformationMatrixDataTriangle = worldViewProjectionMatrixTriangle;
 
 #ifdef USE_IMGUI
 			//ImGuiの内部コマンドを生成する
@@ -1267,8 +1285,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU[0]);
 			}
 
-
 			//描画！(DrawCall/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
+			commandList->DrawInstanced(3, 1, 0, 0);
+
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewTriangle);
+			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceTriangle->GetGPUVirtualAddress());
 			commandList->DrawInstanced(3, 1, 0, 0);
 
 #ifdef USE_IMGUI
@@ -1362,7 +1383,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 	depthStencilResource->Release();
 	dsvDescriptorHeap->Release();
-	transformationMatrixResourceSprite->Release();
+	transformationMatrixResourceTriangle->Release();
+	vertexResourceTriangle->Release();
 
 	//リソースチェック
 	IDXGIDebug1* debug;

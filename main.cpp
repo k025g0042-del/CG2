@@ -1028,15 +1028,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//単位行列を書き込んでおく
 	*wvpData = Matrix::MakeIdentity4x4();
 
-	//Sprite用のTransformationMatrix用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
-	ID3D12Resource* transformationMatrixResourceTriangle = CreateBufferResource(device, sizeof(Matrix4x4));
 
+	ID3D12Resource* transformationMatrixResourceTriangle = CreateBufferResource(device, sizeof(Matrix4x4));
 	//データを書き込む
 	Matrix4x4* transformationMatrixDataTriangle = nullptr;
-
 	//書き込むためのアドレスを取得
 	transformationMatrixResourceTriangle->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataTriangle));
-
 	//単位行列を書き込んで置く
 	*transformationMatrixDataTriangle = Matrix::MakeIdentity4x4();
 
@@ -1087,6 +1084,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//テクスチャ名の変数作成
 	const char* textureName = "uvChecker";
+	const char* TriangleName = "Triangle";
 
 	//Textureを読んで転送する
 	DirectX::ScratchImage mipImages[2];
@@ -1170,13 +1168,22 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			ImGui::Begin("Window");
 			ImGui::ColorEdit3("color", &materialData->x);
-			ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
-			ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
-			ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
 
-			ImGui::DragFloat3("Scale", &transformTriangle.scale.x, 0.01f);
-			ImGui::DragFloat3("Rotate", &transformTriangle.rotate.x, 0.01f);
-			ImGui::DragFloat3("translate", &transformTriangle.translate.x, 0.01f);
+			if (ImGui::TreeNode("Triangle1")) {
+				ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
+				ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.01f);
+				ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
+
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Triangle2")) {
+				ImGui::DragFloat3("Scale", &transformTriangle.scale.x, 0.01f);
+				ImGui::DragFloat3("Rotate", &transformTriangle.rotate.x, 0.01f);
+				ImGui::DragFloat3("translate", &transformTriangle.translate.x, 0.01f);
+				
+				ImGui::TreePop();
+			}
 
 			if (ImGui::BeginCombo("texture", textureName)) {
 				ImGui::Selectable("uvChecker");

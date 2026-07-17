@@ -1029,9 +1029,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			vertexData[start + 1].position.w = 1.0f;
 			vertexData[start + 1].texcoord.x = float(lonIndex) / float(kSubdivision);
 			vertexData[start + 1].texcoord.y = 1.0f - float(latIndex + 1) / float(kSubdivision);
-			vertexData[start + 1].normal.x = vertexData[start].position.x;
-			vertexData[start + 1].normal.y = vertexData[start].position.y;
-			vertexData[start + 1].normal.z = vertexData[start].position.z;
+			vertexData[start + 1].normal.x = vertexData[start + 1].position.x;
+			vertexData[start + 1].normal.y = vertexData[start + 1].position.y;
+			vertexData[start + 1].normal.z = vertexData[start + 1].position.z;
 
 			vertexData[start + 2].position.x = std::cos(lat) * std::cos(lon + kLonEvery);
 			vertexData[start + 2].position.y = std::sin(lat);
@@ -1039,9 +1039,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			vertexData[start + 2].position.w = 1.0f;
 			vertexData[start + 2].texcoord.x = float(lonIndex + 1) / float(kSubdivision);
 			vertexData[start + 2].texcoord.y = 1.0f - float(latIndex) / float(kSubdivision);
-			vertexData[start + 2].normal.x = vertexData[start].position.x;
-			vertexData[start + 2].normal.y = vertexData[start].position.y;
-			vertexData[start + 2].normal.z = vertexData[start].position.z;
+			vertexData[start + 2].normal.x = vertexData[start + 2].position.x;
+			vertexData[start + 2].normal.y = vertexData[start + 2].position.y;
+			vertexData[start + 2].normal.z = vertexData[start + 2].position.z;
 
 			vertexData[start + 3].position.x = std::cos(lat) * std::cos(lon + kLonEvery);
 			vertexData[start + 3].position.y = std::sin(lat);
@@ -1049,9 +1049,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			vertexData[start + 3].position.w = 1.0f;
 			vertexData[start + 3].texcoord.x = float(lonIndex + 1) / float(kSubdivision);
 			vertexData[start + 3].texcoord.y = 1.0f - float(latIndex) / float(kSubdivision);
-			vertexData[start + 3].normal.x = vertexData[start].position.x;
-			vertexData[start + 3].normal.y = vertexData[start].position.y;
-			vertexData[start + 3].normal.z = vertexData[start].position.z;
+			vertexData[start + 3].normal.x = vertexData[start + 3].position.x;
+			vertexData[start + 3].normal.y = vertexData[start + 3].position.y;
+			vertexData[start + 3].normal.z = vertexData[start + 3].position.z;
 
 			vertexData[start + 4].position.x = std::cos(lat + kLatEvery) * std::cos(lon);
 			vertexData[start + 4].position.y = std::sin(lat + kLatEvery);
@@ -1059,9 +1059,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			vertexData[start + 4].position.w = 1.0f;
 			vertexData[start + 4].texcoord.x = float(lonIndex) / float(kSubdivision);
 			vertexData[start + 4].texcoord.y = 1.0f - float(latIndex + 1) / float(kSubdivision);
-			vertexData[start + 4].normal.x = vertexData[start].position.x;
-			vertexData[start + 4].normal.y = vertexData[start].position.y;
-			vertexData[start + 4].normal.z = vertexData[start].position.z;
+			vertexData[start + 4].normal.x = vertexData[start + 4].position.x;
+			vertexData[start + 4].normal.y = vertexData[start + 4].position.y;
+			vertexData[start + 4].normal.z = vertexData[start + 4].position.z;
 
 			vertexData[start + 5].position.x = std::cos(lat + kLatEvery) * std::cos(lon + kLonEvery);
 			vertexData[start + 5].position.y = std::sin(lat + kLatEvery);
@@ -1069,9 +1069,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			vertexData[start + 5].position.w = 1.0f;
 			vertexData[start + 5].texcoord.x = float(lonIndex + 1) / float(kSubdivision);
 			vertexData[start + 5].texcoord.y = 1.0f - float(latIndex + 1) / float(kSubdivision);
-			vertexData[start + 5].normal.x = vertexData[start].position.x;
-			vertexData[start + 5].normal.y = vertexData[start].position.y;
-			vertexData[start + 5].normal.z = vertexData[start].position.z;
+			vertexData[start + 5].normal.x = vertexData[start + 5].position.x;
+			vertexData[start + 5].normal.y = vertexData[start + 5].position.y;
+			vertexData[start + 5].normal.z = vertexData[start + 5].position.z;
 
 		}
 	}
@@ -1223,6 +1223,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Transform transform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 	Transform transformSprite = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
+	DirectionalLight directionalLight = { {1.0f,1.0f,1.0f,1.0f},{0.0f,-1.0f,0.0f},1.0f };
+
 	//カメラを作る
 	Transform cameraTransform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-10.0f} };
 
@@ -1309,6 +1311,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			ImGui::Begin("Window");
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+			ImGui::SliderFloat4("LightColor", &directionalLight.color.x, 0.0f, 1.0f);
+			ImGui::SliderFloat3("LightDirection", &directionalLight.direction.x, -1.0f, 1.0f);
+			ImGui::SliderFloat("LightIntensity", &directionalLight.intensity, 0.0f, 1.0f);
 			ImGui::End();
 
 #endif // USE_IMGUI
@@ -1321,6 +1326,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			Matrix4x4 worldViewProjectionMatrix = Matrix::Multiply(worldMatrix, Matrix::Multiply(viewMatrix, projectionMatrix));
 
 			wvpData->WVP = worldViewProjectionMatrix;
+			wvpData->World = worldMatrix;
+			*directionalLightData = directionalLight;
 
 			//Sprute用のWorldViewProjectionMatrixを作る
 			Matrix4x4 worldMatrixSprite = Matrix::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);

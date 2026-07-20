@@ -57,6 +57,8 @@ struct VertexData {
 struct Material {
 	Vector4 color;
 	int32_t enableLighting;
+	float padding[3];
+	Matrix4x4 uvTransform;
 };
 
 struct TransformationMatrix {
@@ -1118,7 +1120,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	VertexData* vertexDataSprite = nullptr;
 	vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSprite));
 
-	//1枚目の三角形
 	//左下
 	vertexDataSprite[0].position = { 0.0f,360.0f,0.0f,1.0f };
 	vertexDataSprite[0].texcoord = { 0.0f,1.0f };
@@ -1131,8 +1132,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	vertexDataSprite[2].position = { 640.0f,360.0f,0.0f,1.0f };
 	vertexDataSprite[2].texcoord = { 1.0f,1.0f };
 	vertexDataSprite[2].normal = { 0.0f,0.0f,-1.0f };
-
-	
 	//右上
 	vertexDataSprite[3].position = { 640.0f,0.0f,0.0f,1.0f };
 	vertexDataSprite[3].texcoord = { 1.0f,0.0f };
@@ -1149,6 +1148,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//色を書き込む
 	*materialData = { Vector4(1.0f, 1.0f, 1.0f, 1.0f),true };
+	materialData->uvTransform = Matrix::MakeIdentity4x4();
 
 	//WVP用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
 	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(TransformationMatrix));
@@ -1184,6 +1184,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//色を書き込む
 	*materialDataSprite = { Vector4(1.0f, 1.0f, 1.0f, 1.0f),false };
+	materialDataSprite->uvTransform = Matrix::MakeIdentity4x4();
 
 	//Sprite用のTransformationMatrix用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
 	ID3D12Resource* transformationMatrixResourceSprite = CreateBufferResource(device, sizeof(TransformationMatrix));
@@ -1240,6 +1241,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Transform transformSprite = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 	DirectionalLight directionalLight = { {1.0f,1.0f,1.0f,1.0f},{0.0f,-1.0f,0.0f},1.0f };
+
+	//UVTransform用
+	Transform uvTransformSprite = {
+		{1.0f,1.0f,1.0f},
+		{0.0f,0.0f,0.0f},
+		{0.0f,0.0f,0.0f},
+	};
 
 	//カメラを作る
 	Transform cameraTransform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-10.0f} };
@@ -1330,7 +1338,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			ImGui::SliderFloat4("LightColor", &directionalLight.color.x, 0.0f, 1.0f);
 			ImGui::SliderFloat3("LightDirection", &directionalLight.direction.x, -1.0f, 1.0f);
 			ImGui::SliderFloat("LightIntensity", &directionalLight.intensity, 0.0f, 1.0f);
-			ImGui::DragFloat3("sprit", &transformSprite.translate.x, 1.0f);
+			ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f,-10.0f,10.0f);
+			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 			ImGui::End();
 
 #endif // USE_IMGUI
@@ -1353,6 +1363,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			Matrix4x4 worldViewProjectionMatrixSprite = Matrix::Multiply(worldMatrixSprite, Matrix::Multiply(viewMatrixSprite, projectionMatrixSprite));
 			transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
 			transformationMatrixDataSprite->World = worldMatrixSprite;
+
+			//UVTransform用の行列作成
+			Matrix4x4 uvTransformMatrix = Matrix::MakeScaleMatrix(uvTransformSprite.scale);
+			uvTransformMatrix = Matrix::Multiply(uvTransformMatrix, Matrix::MakeRotateZMatrix(uvTransformSprite.rotate.z));
+			uvTransformMatrix = Matrix::Multiply(uvTransformMatrix, Matrix::MakeTranslateMatrix(uvTransformSprite.translate));
+			materialDataSprite->uvTransform = uvTransformMatrix;
 
 #ifdef USE_IMGUI
 			//ImGuiの内部コマンドを生成する

@@ -5,6 +5,10 @@ struct Matrix4x4 {
 	float m[4][4];
 };
 
+struct Matrix3x3 {
+	float m[3][3];
+};
+
 static const int kRowHeight = 20;
 static const int kColumnWidth = 60;
 

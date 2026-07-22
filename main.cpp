@@ -74,9 +74,15 @@ struct DirectionalLight {
 	float intensity; //輝度
 };
 
+struct MaterialData {
+	std::string textureFilePath;
+};
+
 struct ModelData {
 	std::vector<VertexData> vertices;
+	MaterialData material;
 };
+
 
 //ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -480,6 +486,55 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descrip
 	return handleGPU;
 }
 
+/// <summary>
+/// mtlファイルを読む関数
+/// </summary>
+/// <param name="directoryPath"></param>
+/// <param name="filename"></param>
+/// <returns></returns>
+MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename) {
+	//1.　中で必要となる変数の宣言
+
+	//構築するMaterialData
+	MaterialData materialData;
+
+	//ファイルから読んだ1行を格納する物
+	std::string line;
+
+	//2.　ファイルを開く
+	std::ifstream file(directoryPath + "/" + filename);
+
+	//開けなかったら止める
+	assert(file.is_open());
+
+	//3.　実際にファイルを読み、MaterialDataを構築していく
+	while (std::getline(file, line)) {
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier;
+
+		//identifierに応じた処理
+		if (identifier == "map_Kd") {
+			std::string textureFilename;
+			s >> textureFilename;
+
+			//連結してファイルパスにする
+			materialData.textureFilePath = directoryPath + "/" + textureFilename;
+		}
+	}
+
+	file.close();
+
+	//4.　MaterialDataを返す
+	return materialData;
+}
+
+/// <summary>
+/// Objファイルを読む関数
+/// </summary>
+/// <param name="directryPath"></param>
+/// <param name="filename"></param>
+/// <returns></returns>
 ModelData LoadObjFile(const std::string& directryPath, const std::string& filename) {
 	//1.　中で必要となる変数の宣言
 
@@ -522,6 +577,7 @@ ModelData LoadObjFile(const std::string& directryPath, const std::string& filena
 		} else if (identifier == "vt") {
 			Vector2 texccord;
 			s >> texccord.x >> texccord.y;
+			texccord.y = 1.0f - texccord.y;
 			texcoords.push_back(texccord);
 		} else if (identifier == "vn") {
 			Vector3 normal;
@@ -548,10 +604,8 @@ ModelData LoadObjFile(const std::string& directryPath, const std::string& filena
 
 				//要素へのIndexから、実際の要素の値を取得して、頂点を構築する
 				Vector4 position = positions[elementIndices[0] - 1];
-				//position.x *= -1.0f;
 				Vector2 texcoord = texcoords[elementIndices[1] - 1];
 				Vector3 normal = normals[elementIndices[2] - 1];
-				//normal.x *= -1.0f;
 				/*VertexData vertex = { position,texcoord,normal };
 				modelData.vertices.push_back(vertex);*/
 
@@ -562,6 +616,13 @@ ModelData LoadObjFile(const std::string& directryPath, const std::string& filena
 			modelData.vertices.push_back(triangle[2]);
 			modelData.vertices.push_back(triangle[1]);
 			modelData.vertices.push_back(triangle[0]);
+		} else if (identifier == "mtllib") {
+			//materialTemplateLibraryファイルの名前を取得する
+			std::string materialFilename;
+			s >> materialFilename;
+
+			//基本的にobjファイルと同一階層にmtlは存在させるので、ディレクトリ名とファイル名を渡す
+			modelData.material = LoadMaterialTemplateFile(directryPath, materialFilename);
 		}
 	}
 
@@ -1389,7 +1450,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	ID3D12Resource* intermediateResource[2];
 	intermediateResource[0] = UploadTextureData(textureResource[0], mipImages[0], device, commandList);
 
-	mipImages[1] = LoadTexture("resources/monsterBall.png");
+	mipImages[1] = LoadTexture(modelData.material.textureFilePath);
 	const DirectX::TexMetadata& metadata2 = mipImages[1].GetMetadata();
 	textureResource[1] = CreateTextureResource(device, metadata2);
 	intermediateResource[1] = UploadTextureData(textureResource[1], mipImages[1], device, commandList);
@@ -1424,7 +1485,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	device->CreateShaderResourceView(textureResource[1], &srvDesc[1], textureSrvHandleCPU[1]);
 
 	//SRV切り替え用のフラグ
-	bool useMonsterBall = false;
+	bool useMonsterBall = true;
 
 #ifdef USE_IMGUI
 	//ImGuiの初期化

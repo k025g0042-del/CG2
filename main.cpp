@@ -90,7 +90,7 @@ struct D3DResourceLeakChecker {
 		//リソースチェック
 		Microsoft::WRL::ComPtr<IDXGIDebug1> debug;
 
-		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
+		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(debug.GetAddressOf())))) {
 			debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 			debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
 			debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
@@ -295,7 +295,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(const Microsoft::WRL
 
 	//実際に頂点リソースを作る
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
-	hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&resource));
+	hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(resource.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	return resource;
@@ -394,7 +394,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const Microsoft::WR
 		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
 		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr, IID_PPV_ARGS(&resource)
+		nullptr, IID_PPV_ARGS(resource.GetAddressOf())
 	);
 	assert(SUCCEEDED(hr));
 	return resource;
@@ -481,7 +481,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(const M
 		&resourceDesc,
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,
 		&depthClearValus,
-		IID_PPV_ARGS(&resource)
+		IID_PPV_ARGS(resource.GetAddressOf())
 	);
 	assert(SUCCEEDED(hr));
 
@@ -820,9 +820,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		//警告時に止まる
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-
-		//解放
-		infoQueue->Release();
 
 		//抑制するメッセージのID
 		D3D12_MESSAGE_ID denyIds[] = {
@@ -1734,46 +1731,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//解放処理
 	CloseHandle(fenceEvent);
-//	fence->Release();
-//	rtvDescriptorHeap->Release();
-//	srvDescriptorHeap->Release();
-//	swapChainResources[0]->Release();
-//	swapChainResources[1]->Release();
-//	swapChain->Release();
-//	commandList->Release();
-//	commandAllocator->Release();
-//	commandQueue->Release();
-//	device->Release();
-//	useAdapter->Release();
-//	dxgiFactory->Release();
-//#ifdef _DEBUG
-//	debugController->Release();
-//#endif // _DEBUG
 	CloseWindow(hwnd);
-	/*vertexResource->Release();
-	graphicsPipelineState->Release();
-	if (errorBlob) {
-		errorBlob->Release();
-	}
-	rootSignature->Release();
-	pixelShaderBlob->Release();
-	vertexShaderBlob->Release();
-	materialResource->Release();
-	wvpResource->Release();
-	for (int i = 0;i < 2;i++) {
-		mipImages[i].Release();
-		textureResource[i]->Release();
-		intermediateResource[i]->Release();
-	}
-	depthStencilResource->Release();
-	dsvDescriptorHeap->Release();
-	vertexResourceSprite->Release();
-	materialResourceSprite->Release();
-	transformationMatrixResourceSprite->Release();
-	directionalLightResouce->Release();
-	indexResourceSprite->Release();*/
-
-	leakCheck.~D3DResourceLeakChecker();
 
 	return 0;
 }

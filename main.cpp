@@ -116,12 +116,12 @@ struct RiffHeader {
 //FMTチャンク
 struct FormatChunk {
 	ChunkHeader chunk; //"fmt"
-	WAVEFORMAT fmt; //波形フォーマット
+	WAVEFORMATEX fmt; //波形フォーマット
 };
 
 //音声データ
 struct SoundData {
-	WAVEFORMAT wfex; //波形フォーマット
+	WAVEFORMATEX wfex; //波形フォーマット
 	BYTE* pBuffer; //バッファの先頭アドレス
 	unsigned int bufferSize; //バッファのサイズ
 };
@@ -1646,7 +1646,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	bool useMonsterBall = true;
 
 	//音声読み込み
-	SoundData soundData[] = { SoundLoadWave("Resources/Alarm01.wav") };
+	SoundData soundData[] = { SoundLoadWave("resources/Alarm01.wav") };
 
 	//音声再生フラグ
 	bool isSoundPlay = false;
@@ -1706,6 +1706,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			if (isSoundPlay) {
 				//音声再生
 				SoundPlayWave(xAudio2.Get(), soundData[0]);
+				isSoundPlay = false;
 			}
 
 			//transform.rotate.y += 0.03f;

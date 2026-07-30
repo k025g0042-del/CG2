@@ -55,6 +55,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
+#include"DebugCamera.h"
+
 struct Transform {
 	Vector3 scale;
 	Vector3 rotate;
@@ -1623,6 +1625,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//カメラを作る
 	Transform cameraTransform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-10.0f} };
 
+	DebugCamera debugCamera;
+	debugCamera.Initialize();
+
 	//Textureを読んで転送する
 	DirectX::ScratchImage mipImages[2];
 	mipImages[0] = LoadTexture("resources/uvChecker.png");
@@ -1675,6 +1680,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//音声再生フラグ
 	bool isSoundPlay = false;
 
+	//デバックカメラ使用フラグ
+	bool useDebugCamera = false;
+
 #ifdef USE_IMGUI
 	//ImGuiの初期化
 	IMGUI_CHECKVERSION();
@@ -1709,6 +1717,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			BYTE key[256] = {};
 			keyboard->GetDeviceState(sizeof(key), key);
 
+
 #ifdef USE_IMGUI
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
@@ -1740,10 +1749,24 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				isSoundPlay = false;
 			}
 
-			//transform.rotate.y += 0.03f;
+			if (key[DIK_SPACE]) {
+				if (useDebugCamera) {
+					useDebugCamera = false;
+				} else {
+					useDebugCamera = true;
+				}
+			}
+			Matrix4x4 viewMatrix;
+
+
 			Matrix4x4 worldMatrix = Matrix::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			Matrix4x4 cameraMatrix = Matrix::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
-			Matrix4x4 viewMatrix = Matrix::Inverse(cameraMatrix);
+			if (useDebugCamera) {
+				debugCamera.Update(key);
+				viewMatrix = debugCamera.GetViewMatrix();
+			} else {
+				viewMatrix = Matrix::Inverse(cameraMatrix);
+			}
 			Matrix4x4 projectionMatrix = Matrix::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
 			Matrix4x4 worldViewProjectionMatrix = Matrix::Multiply(worldMatrix, Matrix::Multiply(viewMatrix, projectionMatrix));
 

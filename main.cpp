@@ -77,6 +77,7 @@ struct DirectionalLight {
 	Vector4 color; //ライトの色
 	Vector3 direction; //ライトの向き
 	float intensity; //輝度
+	int isHalfLambert; //halfモードか
 };
 
 struct MaterialData {
@@ -124,6 +125,12 @@ struct SoundData {
 	WAVEFORMATEX wfex; //波形フォーマット
 	BYTE* pBuffer; //バッファの先頭アドレス
 	unsigned int bufferSize; //バッファのサイズ
+};
+
+const char* LightType[] = {
+	"NOLight",
+	"Lambertian",
+	"Half Lambert"
 };
 
 //ウィンドウプロシージャ
@@ -1389,6 +1396,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//マテリアル用のリソースを作る。今回はcolor１つ分のサイズを用意する
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceBall = CreateBufferResource(device, sizeof(Material));
 
+	//ライトを使うかどうか
+	bool isLighting = true;
+
 	//マテリアルにデータを書き込む
 	Material* materialDataBall = nullptr;
 
@@ -1396,7 +1406,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	materialResourceBall->Map(0, nullptr, reinterpret_cast<void**>(&materialDataBall));
 
 	//色を書き込む
-	*materialDataBall = { Vector4(1.0f, 1.0f, 1.0f, 1.0f),true };
+	*materialDataBall = { Vector4(1.0f, 1.0f, 1.0f, 1.0f),isLighting };
 	materialDataBall->uvTransform = Matrix::MakeIdentity4x4();
 
 	//WVP用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
@@ -1508,7 +1518,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 
 	//色を書き込む
-	*materialData = { Vector4(1.0f, 1.0f, 1.0f, 1.0f),true };
+	*materialData = { Vector4(1.0f, 1.0f, 1.0f, 1.0f),isLighting };
 	materialData->uvTransform = Matrix::MakeIdentity4x4();
 
 	//WVP用のリソースを作る。Matrix4x4 1つ分のサイズを用意する
@@ -1533,6 +1543,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	directionalLightData->color = { 1.0f,1.0f,1.0f,1.0f };
 	directionalLightData->direction = { 0.0f,-1.0f,0.0f };
 	directionalLightData->intensity = 1.0f;
+	directionalLightData->isHalfLambert = true;
 
 	//マテリアル用のリソースを作る。今回はcolor１つ分のサイズを用意する
 	Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = CreateBufferResource(device, sizeof(Material));
@@ -1612,7 +1623,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Transform transformSprite = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 	Transform transformBall = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
-	DirectionalLight directionalLight = { {1.0f,1.0f,1.0f,1.0f},{0.0f,-1.0f,0.0f},1.0f };
+	DirectionalLight directionalLight = { {1.0f,1.0f,1.0f,1.0f},{0.0f,-1.0f,0.0f},1.0f ,0 };
 
 	//UVTransform用
 	Transform uvTransformSprite = {
@@ -1626,11 +1637,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//Textureを読んで転送する
 	DirectX::ScratchImage mipImages[2];
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureResource[2];
+	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource[2];
+
 	mipImages[0] = LoadTexture("resources/uvChecker.png");
 	const DirectX::TexMetadata& metadata = mipImages[0].GetMetadata();
-	Microsoft::WRL::ComPtr<ID3D12Resource> textureResource[2];
 	textureResource[0] = CreateTextureResource(device, metadata);
-	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource[2];
 	intermediateResource[0] = UploadTextureData(textureResource[0], mipImages[0], device, commandList);
 
 	mipImages[1] = LoadTexture(modelData.material.textureFilePath);
@@ -1667,14 +1679,17 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	device->CreateShaderResourceView(textureResource[1].Get(), &srvDesc[1], textureSrvHandleCPU[1]);
 
-	//SRV切り替え用のフラグ
-	bool useMonsterBall = true;
-
 	//音声読み込み
 	SoundData soundData[] = { SoundLoadWave("resources/Alarm01.wav") };
 
 	//音声再生フラグ
 	bool isSoundPlay = false;
+
+	bool isBallDraw = false;
+	bool isObjDraw = true;
+	bool isSpriteDraw = true;
+
+	int currntLightType = 0;
 
 #ifdef USE_IMGUI
 	//ImGuiの初期化
@@ -1710,20 +1725,27 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			//開発用UIの処理
 			ImGui::Begin("Window");
+			ImGui::Checkbox("isObjDraw", &isObjDraw);
 			ImGui::DragFloat3("ObjScale", &transformObj.scale.x, 0.01f);
 			ImGui::DragFloat3("ObjRotate", &transformObj.rotate.x, 0.01f);
 			ImGui::DragFloat3("ObjTranslate", &transformObj.translate.x, 0.01f);
+			ImGui::Checkbox("isSpriteDraw", &isSpriteDraw);
 			ImGui::DragFloat3("SpriteScale", &transformSprite.scale.x, 0.01f);
 			ImGui::DragFloat3("SpriteRotate", &transformSprite.rotate.x, 0.01f);
 			ImGui::DragFloat3("SpriteTranslate", &transformSprite.translate.x, 1.0f);
+			ImGui::Checkbox("isBallDraw", &isBallDraw);
 			ImGui::DragFloat3("BallScale", &transformBall.scale.x, 0.01f);
 			ImGui::DragFloat3("BallRotate", &transformBall.rotate.x, 0.01f);
 			ImGui::DragFloat3("BallTranslate", &transformBall.translate.x, 0.01f);
 			ImGui::Button("SoundPlay");
 			if (ImGui::IsItemActive()) {
-				isSoundPlay = true;
+				if (isSoundPlay) {
+					isSoundPlay = false;
+				} else {
+					isSoundPlay = true;
+				}
 			}
-			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+			ImGui::Combo("LightType", &currntLightType, LightType, IM_ARRAYSIZE(LightType));
 			ImGui::SliderFloat4("LightColor", &directionalLight.color.x, 0.0f, 1.0f);
 			ImGui::SliderFloat3("LightDirection", &directionalLight.direction.x, -1.0f, 1.0f);
 			ImGui::SliderFloat("LightIntensity", &directionalLight.intensity, 0.0f, 1.0f);
@@ -1740,6 +1762,33 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				isSoundPlay = false;
 			}
 
+			if (currntLightType == 0) {
+				if (isLighting) {
+					isLighting = false;
+				}
+			} else if (currntLightType == 1) {
+				if (directionalLight.isHalfLambert != 0) {
+					directionalLight.isHalfLambert = 0;
+				}
+
+				if (!isLighting) {
+					isLighting = true;
+				}
+
+			} else if (currntLightType == 2) {
+				if (directionalLight.isHalfLambert != 1) {
+					directionalLight.isHalfLambert = 1;
+				}
+
+				if (!isLighting) {
+					isLighting = true;
+				}
+
+			}
+
+			materialData->enableLighting = isLighting;
+			materialDataBall->enableLighting = isLighting;
+
 			Matrix4x4 worldMatrix = Matrix::MakeAffineMatrix(transformObj.scale, transformObj.rotate, transformObj.translate);
 			Matrix4x4 cameraMatrix = Matrix::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
 			Matrix4x4 viewMatrix = Matrix::Inverse(cameraMatrix);
@@ -1755,7 +1804,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			Matrix4x4 cameraMatrixBall = Matrix::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
 			Matrix4x4 viewMatrixBall = Matrix::Inverse(cameraMatrix);
 			Matrix4x4 projectionMatrixBall = Matrix::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
-			Matrix4x4 worldViewProjectionMatrixBall = Matrix::Multiply(worldMatrix, Matrix::Multiply(viewMatrix, projectionMatrix));
+			Matrix4x4 worldViewProjectionMatrixBall = Matrix::Multiply(worldMatrixBall, Matrix::Multiply(viewMatrix, projectionMatrix));
 
 			wvpDataBall->WVP = worldViewProjectionMatrixBall;
 			wvpDataBall->World = worldMatrixBall;
@@ -1843,17 +1892,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 
 			//SRVのDescriptorTableの先頭を設定。2はrootParameter[2]である。
-			if (useMonsterBall) {
-				commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU[1]);
-			} else {
-				commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU[0]);
-			}
+			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU[1]);
 
 			//平行光源用
 			commandList->SetGraphicsRootConstantBufferView(3, directionalLightResouce->GetGPUVirtualAddress());
 
 			//描画！(DrawCall/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
-			commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+			if (isObjDraw) {
+				commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+			}
 
 			//球の描画
 			//VBVを設定する
@@ -1861,7 +1908,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			//マテリアルCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResourceBall->GetGPUVirtualAddress());
-			
+
 			//wvp用のCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResourceBall->GetGPUVirtualAddress());
 
@@ -1869,12 +1916,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU[0]);
 
 			//描画
-			commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+			if (isBallDraw) {
+				commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+			}
 
 			//Spriteの描画。変更の必要なものだけ変更する
 			//VBVを設定する
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-			
+
 			//IBAを設定
 			commandList->IASetIndexBuffer(&indexBufferViewSprite);
 
@@ -1888,7 +1937,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU[0]);
 
 			//描画!(DrawCall/ドローコール)
-			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+			if (isSpriteDraw) {
+				commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+			}
 
 #ifdef USE_IMGUI
 			//実際のcommandListのImGuiの描画コマンドを積む

@@ -12,6 +12,7 @@ struct DirectionalLight
     float32_t4 color;
     float32_t3 direction;
     float intensity;
+    int isHalfLambert;
 };
 
 ConstantBuffer<Material> gMaterial : register(b0);
@@ -33,10 +34,18 @@ PixelShaderOutput main(VertexShaderOutput input)
     
     if (gMaterial.enableLighting != 0)
     {
-        //half lambert
-        float NdotL = dot(normalize(input.normal), -gDirectionalLight.direction);
-        float cos = pow(NdotL * 0.5f + 0.5f, 2.0f);
-        //float cos = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
+        float cos;
+        
+        if (gDirectionalLight.isHalfLambert == 1)
+        {
+            //half lambert
+            float NdotL = dot(normalize(input.normal), -gDirectionalLight.direction);
+            cos = pow(NdotL * 0.5f + 0.5f, 2.0f);
+        }
+        else if (gDirectionalLight.isHalfLambert == 0)
+        {
+            cos = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
+        }
         output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
     }
     else

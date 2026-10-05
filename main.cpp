@@ -134,6 +134,18 @@ struct SoundData {
 	unsigned int bufferSize; //バッファのサイズ
 };
 
+//ブレンドモード
+enum BlendMode {
+	kBlendModeNone, // ブレンドなし
+	kBlendModeNormal, // 通常αブレンド、デフォルト
+	kBlendModeAdd, // 加算
+	kBlendModeSubtract, // 減算
+	kBlendModeMultily, // 乗算
+	kBlendModeScreen, // スクリーン
+
+	kCountOfBlendMode, // 使用禁止 (要素数カウント用)
+};
+
 //ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 #ifdef USE_IMGUI
@@ -788,6 +800,57 @@ void SoundPlayWave(IXAudio2* xAudio2, const SoundData& soundData) {
 	//波形データの再生
 	hr = pSourceVoice->SubmitSourceBuffer(&buf);
 	hr = pSourceVoice->Start();
+}
+
+Microsoft::WRL::ComPtr<ID3D12PipelineState> BlendModeUpdate(Microsoft::WRL::ComPtr<ID3D12Device> &device,D3D12_BLEND_DESC &blendDesc, D3D12_GRAPHICS_PIPELINE_STATE_DESC &graphicsPipelineStateDesc,BlendMode &blendMode) {
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	if (blendMode != kBlendModeNone) {
+		blendDesc.RenderTarget[0].BlendEnable = true;
+	}
+
+	switch (blendMode) {
+	case kBlendModeNone:
+		break;
+	case kBlendModeNormal:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	case kBlendModeAdd:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	case kBlendModeSubtract:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	case kBlendModeMultily:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
+		break;
+	case kBlendModeScreen:
+		break;
+	default:
+		break;
+	}
+
+	if (blendMode != kBlendModeNone) {
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	}
+
+	graphicsPipelineStateDesc.BlendState = blendDesc;
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
+
+	HRESULT hr;
+	hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
+
+	return graphicsPipelineState;
 }
 
 // Windowsアプリでのエントリーポイント(main関数)

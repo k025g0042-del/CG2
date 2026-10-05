@@ -1,5 +1,5 @@
 #pragma once
-#include <dinput.h>
+#include<Windows.h>
 #include"Vector.h"
 #include"Matrix.h"
 

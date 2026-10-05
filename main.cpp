@@ -1694,13 +1694,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		} else {
 			//ゲームの処理
 
-			//キーボード情報の取得開始
-			keyboard->Acquire();
-
-			//全キーの入力状態を取得する
-			BYTE key[256] = {};
-			keyboard->GetDeviceState(sizeof(key), key);
-
+			//入力の更新
+			input->Update();
 
 #ifdef USE_IMGUI
 			ImGui_ImplDX12_NewFrame();
@@ -1733,20 +1728,20 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				isSoundPlay = false;
 			}
 
-			if (key[DIK_SPACE]) {
+			/*if (key[DIK_SPACE]) {
 				if (useDebugCamera) {
 					useDebugCamera = false;
 				} else {
 					useDebugCamera = true;
 				}
-			}
+			}*/
 			Matrix4x4 viewMatrix;
 
 
 			Matrix4x4 worldMatrix = Matrix::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			Matrix4x4 cameraMatrix = Matrix::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
 			if (useDebugCamera) {
-				debugCamera.Update(key);
+				//debugCamera.Update(key);
 				viewMatrix = debugCamera.GetViewMatrix();
 			} else {
 				viewMatrix = Matrix::Inverse(cameraMatrix);

@@ -1,7 +1,7 @@
 #pragma once
-#include<Windows.h>
 #include"Vector.h"
 #include"Matrix.h"
+#include"Input.h"
 
 /// <summary>
 /// デバックカメラ
@@ -31,7 +31,7 @@ public:
 
 	void Initialize();
 
-	void Update(BYTE key[]);
+	void Update(Input input);
 
 	Matrix4x4 GetViewMatrix() { return viewMatrix_; }
 

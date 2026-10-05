@@ -1581,7 +1581,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//入力の初期化
 	input = new Input();
-	input->Initialize(wc.hInstance,hwnd);
+	input->Initialize(wc.hInstance, hwnd);
 
 	//XAudio2の変数宣言
 	Microsoft::WRL::ComPtr<IXAudio2> xAudio2;
@@ -1728,20 +1728,20 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				isSoundPlay = false;
 			}
 
-			/*if (key[DIK_SPACE]) {
+			if (input->TriggerKey(DIK_SPACE)) {
 				if (useDebugCamera) {
 					useDebugCamera = false;
 				} else {
 					useDebugCamera = true;
 				}
-			}*/
+			}
 			Matrix4x4 viewMatrix;
 
 
 			Matrix4x4 worldMatrix = Matrix::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 			Matrix4x4 cameraMatrix = Matrix::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
 			if (useDebugCamera) {
-				//debugCamera.Update(key);
+				debugCamera.Update(*input);
 				viewMatrix = debugCamera.GetViewMatrix();
 			} else {
 				viewMatrix = Matrix::Inverse(cameraMatrix);

@@ -31,6 +31,11 @@ PixelShaderOutput main(VertexShaderOutput input)
     float32_t4 textureColor = gTexture.Sample(gSampler, transformedUV.xy);
     PixelShaderOutput output;
     
+    if (textureColor.a <= 0.5f)
+    {
+        discard;
+    }
+    
     if (gMaterial.enableLighting != 0)
     {
         //half lambert
@@ -44,6 +49,17 @@ PixelShaderOutput main(VertexShaderOutput input)
     {
         output.color = gMaterial.color * textureColor;
     }
+    
+    if (textureColor.a == 0.0f)
+    {
+        discard;
+    }
+    
+    if (output.color.a == 0.0f)
+    {
+        discard;
+    }
+    
     return output;
 }
 

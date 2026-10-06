@@ -146,6 +146,15 @@ enum BlendMode {
 	kCountOfBlendMode, // 使用禁止 (要素数カウント用)
 };
 
+const char* kBlendModeNames[] = {
+	"None", // ブレンドなし
+	"Normal", // 通常αブレンド、デフォルト
+	"Add", // 加算
+	"Subtract", // 減算
+	"Multily", // 乗算
+	"Screen", // スクリーン
+};
+
 //ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 #ifdef USE_IMGUI
@@ -802,10 +811,12 @@ void SoundPlayWave(IXAudio2* xAudio2, const SoundData& soundData) {
 	hr = pSourceVoice->Start();
 }
 
-Microsoft::WRL::ComPtr<ID3D12PipelineState> BlendModeUpdate(Microsoft::WRL::ComPtr<ID3D12Device> &device,D3D12_BLEND_DESC &blendDesc, D3D12_GRAPHICS_PIPELINE_STATE_DESC &graphicsPipelineStateDesc,BlendMode &blendMode) {
+Microsoft::WRL::ComPtr<ID3D12PipelineState> BlendModeUpdate(Microsoft::WRL::ComPtr<ID3D12Device>& device, D3D12_BLEND_DESC& blendDesc, D3D12_GRAPHICS_PIPELINE_STATE_DESC& graphicsPipelineStateDesc, BlendMode& blendMode) {
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-	if (blendMode != kBlendModeNone) {
+	if (blendMode == kBlendModeNone) {
+		blendDesc.RenderTarget[0].BlendEnable = false;
+	} else {
 		blendDesc.RenderTarget[0].BlendEnable = true;
 	}
 
@@ -816,6 +827,7 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> BlendModeUpdate(Microsoft::WRL::ComP
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		break;
 	case kBlendModeAdd:
 		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
 		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
@@ -832,6 +844,9 @@ Microsoft::WRL::ComPtr<ID3D12PipelineState> BlendModeUpdate(Microsoft::WRL::ComP
 		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
 		break;
 	case kBlendModeScreen:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
 		break;
 	default:
 		break;
@@ -1753,6 +1768,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//デバックカメラ使用フラグ
 	bool useDebugCamera = false;
 
+	BlendMode blendMode = BlendMode::kBlendModeNormal;
+	int mode = static_cast<int>(blendMode);
+	BlendMode preBlendMode = blendMode;
+
 #ifdef USE_IMGUI
 	//ImGuiの初期化
 	IMGUI_CHECKVERSION();
@@ -1810,9 +1829,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 			ImGui::DragFloat3("rotate", &transform.rotate.x, 0.01f);
 			ImGui::ColorEdit4("Color", &materialData->color.x);
+			ImGui::Combo("BlendMode", &mode, kBlendModeNames, IM_ARRAYSIZE(kBlendModeNames));
 			ImGui::End();
 
 #endif // USE_IMGUI
+			blendMode = static_cast<BlendMode>(mode);
+
+			if (preBlendMode != blendMode) {
+				graphicsPipelineState = BlendModeUpdate(device, blendDesc, graphicsPipelineStateDesc, blendMode);
+				hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
+				preBlendMode = blendMode;
+			}
+
 
 			if (isSoundPlay) {
 				//音声再生

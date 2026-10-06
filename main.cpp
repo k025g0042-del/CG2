@@ -129,6 +129,27 @@ struct SoundData {
 	unsigned int bufferSize; //バッファのサイズ
 };
 
+//ブレンドモード
+enum BlendMode {
+	kBlendModeNone, // ブレンドなし
+	kBlendModeNormal, // 通常αブレンド、デフォルト
+	kBlendModeAdd, // 加算
+	kBlendModeSubtract, // 減算
+	kBlendModeMultily, // 乗算
+	kBlendModeScreen, // スクリーン
+
+	kCountOfBlendMode, // 使用禁止 (要素数カウント用)
+};
+
+const char* kBlendModeNames[] = {
+	"None", // ブレンドなし
+	"Normal", // 通常αブレンド、デフォルト
+	"Add", // 加算
+	"Subtract", // 減算
+	"Multily", // 乗算
+	"Screen", // スクリーン
+};
+
 //ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 #ifdef USE_IMGUI
@@ -785,6 +806,63 @@ void SoundPlayWave(IXAudio2* xAudio2, const SoundData& soundData) {
 	hr = pSourceVoice->Start();
 }
 
+Microsoft::WRL::ComPtr<ID3D12PipelineState> BlendModeUpdate(Microsoft::WRL::ComPtr<ID3D12Device>& device, D3D12_BLEND_DESC& blendDesc, D3D12_GRAPHICS_PIPELINE_STATE_DESC& graphicsPipelineStateDesc, BlendMode& blendMode) {
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	if (blendMode == kBlendModeNone) {
+		blendDesc.RenderTarget[0].BlendEnable = false;
+	} else {
+		blendDesc.RenderTarget[0].BlendEnable = true;
+	}
+
+	switch (blendMode) {
+	case kBlendModeNone:
+		break;
+	case kBlendModeNormal:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		break;
+	case kBlendModeAdd:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	case kBlendModeSubtract:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	case kBlendModeMultily:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
+		break;
+	case kBlendModeScreen:
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	default:
+		break;
+	}
+
+	if (blendMode != kBlendModeNone) {
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	}
+
+	graphicsPipelineStateDesc.BlendState = blendDesc;
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
+
+	HRESULT hr;
+	hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
+
+	return graphicsPipelineState;
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	D3DResourceLeakChecker leakCheck;
@@ -1208,11 +1286,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
 	inputLayoutDesc.NumElements = _countof(inputElementDescs);
 
-	//BlendStateの設定
+	//BlendStateの設定(ブレンドモードの設定)
 	D3D12_BLEND_DESC blendDesc{};
 
 	//全ての色要素を書き込む
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	blendDesc.RenderTarget[0].BlendEnable = true;
+	blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 
 	//RasterizerStateの設定
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
@@ -1392,7 +1477,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 #pragma endregion
 
 	//モデル読み込み
-	ModelData modelData = LoadObjFile("resources", "plane.obj");
+	ModelData modelData = LoadObjFile("resources", "fence.obj");
 
 	//頂点リソースを作る
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = CreateBufferResource(device, sizeof(VertexData) * modelData.vertices.size());
@@ -1667,6 +1752,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//デバックカメラ使用フラグ
 	bool useDebugCamera = false;
 
+	BlendMode blendMode = BlendMode::kBlendModeNormal;
+	int mode = static_cast<int>(blendMode);
+	BlendMode preBlendMode = blendMode;
+
 #ifdef USE_IMGUI
 	//ImGuiの初期化
 	IMGUI_CHECKVERSION();
@@ -1718,9 +1807,19 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
 			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 			ImGui::DragFloat3("rotate", &transform.rotate.x, 0.01f);
+			ImGui::ColorEdit4("Color", &materialData->color.x);
+			ImGui::Combo("BlendMode", &mode, kBlendModeNames, IM_ARRAYSIZE(kBlendModeNames));
 			ImGui::End();
 
 #endif // USE_IMGUI
+			blendMode = static_cast<BlendMode>(mode);
+
+			if (preBlendMode != blendMode) {
+				graphicsPipelineState = BlendModeUpdate(device, blendDesc, graphicsPipelineStateDesc, blendMode);
+				hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
+				preBlendMode = blendMode;
+			}
+
 
 			if (isSoundPlay) {
 				//音声再生

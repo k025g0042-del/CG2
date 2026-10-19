@@ -1727,16 +1727,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	io.Fonts->Build();
 #endif // USE_IMGUI
 
-	//メインループ
-	MSG msg{};
-
-	//ウィンドウの×ボタンが押されるまでループ
-	while (msg.message != WM_QUIT) {
-		//Windowにメッセージが来ていたら最優先で処理させる
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		} else {
+	//ゲームループ
+	while (true) {
+		//Windowsのメッセージ処理
+		if (winAip->ProcessMessage()) {
+			//ゲームループを抜ける
+			break;
+		}
 			//ゲームの処理
 
 			//入力の更新
@@ -1967,7 +1964,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			hr = commandList->Reset(commandAllocator.Get(), nullptr);
 			assert(SUCCEEDED(hr));
 		}
-	}
+	
 
 	
 

@@ -1,7 +1,6 @@
 #include "WinAPI.h"
 #include"externals/imgui/imgui.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-#include<cstdint>
 
 LRESULT WinAPI::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 #ifdef USE_IMGUI
@@ -27,8 +26,6 @@ void WinAPI::Initialize() {
 	//COMの初期化
 	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
 
-	//ウィンドウクラスを登録
-	WNDCLASS wc{};
 	//ウィンドウプロシージャ
 	wc.lpfnWndProc = WindowProc;
 	//ウィンドウクラス名(何でもよい)
@@ -41,12 +38,8 @@ void WinAPI::Initialize() {
 	//ウィンドウクラスを登録する
 	RegisterClass(&wc);
 
-	//クライアント領域のサイズ
-	const int32_t kClientWidth = 1280;
-	const int32_t kClientHeight = 720;
-
 	//ウィンドウサイズを表す構造体にクライアント領域を入れる
-	RECT wrc = { 0,0,kClientWidth,kClientHeight };
+	RECT wrc = { 0,0,WinAPI::kClientWidth,WinAPI::kClientHeight };
 
 	//クライアント領域を元に実際のサイズにwrcを変更してもらう
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
@@ -60,7 +53,7 @@ void WinAPI::Initialize() {
 	オプション
 	*/
 
-	HWND hwnd = CreateWindow(
+	 hwnd = CreateWindow(
 		wc.lpszClassName,
 		L"CG2",
 		WS_OVERLAPPEDWINDOW,

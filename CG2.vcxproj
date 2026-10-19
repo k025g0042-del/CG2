@@ -165,6 +165,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Matrix.cpp" />
     <ClCompile Include="Vector.cpp" />
+    <ClCompile Include="WinAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl">
@@ -197,6 +198,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Input.h" />
     <ClInclude Include="Matrix.h" />
     <ClInclude Include="Vector.h" />
+    <ClInclude Include="WinAPI.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

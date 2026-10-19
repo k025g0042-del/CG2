@@ -1622,7 +1622,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//入力の初期化
 	input = new Input();
-	input->Initialize(winAip->GETHInstance(), winAip->GetHwnd());
+	input->Initialize(winAip);
 
 	//XAudio2の変数宣言
 	Microsoft::WRL::ComPtr<IXAudio2> xAudio2;
@@ -1969,8 +1969,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		}
 	}
 
-	//COMの終了処理
-	CoUninitialize();
+	
 
 #ifdef USE_IMGUI
 	//ImGuiの終了処理(初期化と逆の順番で行う)
@@ -1981,7 +1980,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//解放処理
 	CloseHandle(fenceEvent);
-	CloseWindow(winAip->GetHwnd());
+	winAip->Finalize();
 
 	//XAudio2解放
 	xAudio2.Reset();

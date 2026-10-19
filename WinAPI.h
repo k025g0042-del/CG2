@@ -35,6 +35,11 @@ public:
 	/// </summary>
 	void Update();
 
+	/// <summary>
+	/// 終了
+	/// </summary>
+	void Finalize();
+
 	//Getter
 	HWND GetHwnd()const { return hwnd; }
 	HINSTANCE GETHInstance()const { return wc.hInstance; }

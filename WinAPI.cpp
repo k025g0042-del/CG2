@@ -72,3 +72,9 @@ void WinAPI::Initialize() {
 
 void WinAPI::Update() {
 }
+
+void WinAPI::Finalize() {
+	CloseWindow(hwnd);
+	//COMの終了処理
+	CoUninitialize();
+}

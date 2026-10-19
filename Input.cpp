@@ -6,11 +6,13 @@
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
 
-void Input::Initialize(HINSTANCE wc, HWND hwnd) {
+void Input::Initialize(WinAPI* winApi) {
+	winApi_ = winApi;
+
 	HRESULT hr;
 
 	//DirectInputの初期化
-	hr = DirectInput8Create(wc, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+	hr = DirectInput8Create(winApi_->GETHInstance(), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(hr));
 
 	//キーボードデバイスの生成
@@ -22,7 +24,7 @@ void Input::Initialize(HINSTANCE wc, HWND hwnd) {
 	assert(SUCCEEDED(hr));
 
 	//排他制御レベルのセット
-	hr = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+	hr = keyboard->SetCooperativeLevel(winApi_->GetHwnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
 	assert(SUCCEEDED(hr));
 }
 

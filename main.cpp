@@ -869,7 +869,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	D3DResourceLeakChecker leakCheck;
 
 	//ポインタ
-	WinAPI* winAip = nullptr;
+	WinAPI* winApi = nullptr;
 
 	//誰も捕捉しなかった場合に(Unhandled)、補足する関数を登録
 	SetUnhandledExceptionFilter(ExportDump);
@@ -900,8 +900,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//LogFileCreate();
 
 	//WindowsAPIの初期化
-	winAip = new WinAPI();
-	winAip->Initialize();
+	winApi = new WinAPI();
+	winApi->Initialize();
 
 	//ログ記録
 	Log("Window Create!\n");
@@ -1056,7 +1056,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
 	//コマンドキュー、ウィンドウハンドル、設定を渡して生成する
-	hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), winAip->GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf()));
+	hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), winApi->GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf()));
 	assert(SUCCEEDED(hr));
 
 	//RTV用のヒープでディスクリプタの数は2。RTVはShader内で触るものではないので、ShaderVisibleはfalse
@@ -1622,7 +1622,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//入力の初期化
 	input = new Input();
-	input->Initialize(winAip);
+	input->Initialize(winApi);
 
 	//XAudio2の変数宣言
 	Microsoft::WRL::ComPtr<IXAudio2> xAudio2;
@@ -1717,7 +1717,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
-	ImGui_ImplWin32_Init(winAip->GetHwnd());
+	ImGui_ImplWin32_Init(winApi->GetHwnd());
 	ImGui_ImplDX12_Init(device.Get(),
 		swapChainDesc.BufferCount,
 		rtvDesc.Format, srvDescriptorHeap.Get(),
@@ -1730,7 +1730,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//ゲームループ
 	while (true) {
 		//Windowsのメッセージ処理
-		if (winAip->ProcessMessage()) {
+		if (winApi->ProcessMessage()) {
 			//ゲームループを抜ける
 			break;
 		}
@@ -1977,7 +1977,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//解放処理
 	CloseHandle(fenceEvent);
-	winAip->Finalize();
+	winApi->Finalize();
 
 	//XAudio2解放
 	xAudio2.Reset();
@@ -1987,7 +1987,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//入力解放
 	delete input;
 	//WindowAPI解放
-	delete winAip;
+	delete winApi;
 
 	return 0;
 }

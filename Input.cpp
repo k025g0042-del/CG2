@@ -12,7 +12,7 @@ void Input::Initialize(WinAPI* winApi) {
 	HRESULT hr;
 
 	//DirectInputの初期化
-	hr = DirectInput8Create(winApi_->GETHInstance(), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+	hr = DirectInput8Create(winApi_->GetHInstance(), DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
 	assert(SUCCEEDED(hr));
 
 	//キーボードデバイスの生成

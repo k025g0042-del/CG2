@@ -43,6 +43,6 @@ public:
 
 	//Getter
 	HWND GetHwnd()const { return hwnd; }
-	HINSTANCE GETHInstance()const { return wc.hInstance; }
+	HINSTANCE GetHInstance()const { return wc.hInstance; }
 };
 

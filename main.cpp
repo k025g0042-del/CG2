@@ -1168,7 +1168,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	//RootParameter作成。複数設定できるので配列。PixelShaderのMaterialとVertexShaderのTransform
-	D3D12_ROOT_PARAMETER rootParameters[4] = {};
+	D3D12_ROOT_PARAMETER rootParameters[5] = {};
 
 	//CBVを使う
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -1187,6 +1187,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//レジスタ番号0を使う
 	rootParameters[1].Descriptor.ShaderRegister = 0;
+
+
 
 	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
 
@@ -1325,6 +1327,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	IDxcBlob* pixelShaderBlob = CompileShader(L"Object3D.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
 	assert(pixelShaderBlob != nullptr);
+
+	IDxcBlob* vertexShaderBlobParticle = CompileShader(L"Particle.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+	assert(vertexShaderBlobParticle != nullptr);
+
+	IDxcBlob* pixelShaderBlobParticle = CompileShader(L"Particle.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+	assert(pixelShaderBlobParticle != nullptr);
 
 	//DepthStencilStateの設定
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
@@ -1599,7 +1607,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	*wvpData = { Matrix::MakeIdentity4x4() ,Matrix::MakeIdentity4x4() };
 
 	//パーティクル用のリソース
-	//TransformationMatrix gTransformationMatrices[10];
 	const uint32_t kNumInstance = 10; //インスタンス数
 	//Instancing用のTransformationMatrixリソースを作る
 	Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource = CreateBufferResource(device, sizeof(TransformationMatrix) * kNumInstance);
@@ -1716,6 +1723,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		{0.0f,0.0f,0.0f},
 	};
 
+	//Instancing用のTransform
+	Transform transforms[kNumInstance];
+	for (uint32_t index = 0;index < kNumInstance;++index) {
+		transforms[index].scale = { 1.0f,1.0f,1.0f };
+		transforms[index].rotate = { 0.0f,0.0f,0.0f };
+		transforms[index].translate = { index * 0.1f,index * 0.1f,index * 0.1f };
+	}
+
 	//カメラを作る
 	Transform cameraTransform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-10.0f} };
 
@@ -1764,6 +1779,19 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	device->CreateShaderResourceView(textureResource[0].Get(), &srvDesc[0], textureSrvHandleCPU[0]);
 
 	device->CreateShaderResourceView(textureResource[1].Get(), &srvDesc[1], textureSrvHandleCPU[1]);
+
+	//StructuredBufferのSRVの作成
+	D3D12_SHADER_RESOURCE_VIEW_DESC instancingSrvDesc{};
+	instancingSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	instancingSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	instancingSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	instancingSrvDesc.Buffer.FirstElement = 0;
+	instancingSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	instancingSrvDesc.Buffer.NumElements = kNumInstance;
+	instancingSrvDesc.Buffer.StructureByteStride = sizeof(TransformationMatrix);
+	D3D12_CPU_DESCRIPTOR_HANDLE instancingSrvHandleCPU = GetCPUDescriptorHandle(srvDescriptorHeap, desriptorSizeSRV, 3);
+	D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU = GetGPUDescriptorHandle(srvDescriptorHeap, desriptorSizeSRV, 3);
+	device->CreateShaderResourceView(instancingResource.Get(), &instancingSrvDesc, instancingSrvHandleCPU);
 
 	//SRV切り替え用のフラグ
 	bool useMonsterBall = true;
@@ -1872,6 +1900,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 			Matrix4x4 projectionMatrix = Matrix::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
 			Matrix4x4 worldViewProjectionMatrix = Matrix::Multiply(worldMatrix, Matrix::Multiply(viewMatrix, projectionMatrix));
+			Matrix4x4 viewProjectionMatrix = Matrix::Multiply(viewMatrix, projectionMatrix);
+
 
 			wvpData->WVP = worldViewProjectionMatrix;
 			wvpData->World = worldMatrix;
@@ -1890,6 +1920,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			uvTransformMatrix = Matrix::Multiply(uvTransformMatrix, Matrix::MakeRotateZMatrix(uvTransformSprite.rotate.z));
 			uvTransformMatrix = Matrix::Multiply(uvTransformMatrix, Matrix::MakeTranslateMatrix(uvTransformSprite.translate));
 			materialDataSprite->uvTransform = uvTransformMatrix;
+
+			//Instancing用の行列作成
+			for (uint32_t index = 0;index < kNumInstance;++index) {
+				Matrix4x4 worldinstanceMatrix = Matrix::MakeAffineMatrix(transforms[index].scale, transforms[index].rotate, transforms[index].translate);
+				Matrix4x4 worldViewProjectioninstanceMatrix = Matrix::Multiply(worldinstanceMatrix, viewProjectionMatrix);
+				instancingData[index].WVP = worldViewProjectioninstanceMatrix;
+				instancingData[index].World = worldinstanceMatrix;
+			}
+
 
 #ifdef USE_IMGUI
 			//ImGuiの内部コマンドを生成する
@@ -1972,7 +2011,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			//描画！(DrawCall/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
 			//commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
 
-			commandList->DrawInstanced(UINT(modelData.vertices.size()), 10, 0, 0);
+			//commandList->DrawInstanced(UINT(modelData.vertices.size()), 10, 0, 0);
+
+			//instancing用のDataを読むためにStructureBufferのSRVを設定する
+			commandList->SetGraphicsRootDescriptorTable(4, instancingSrvHandleGPU);
+			//描画！6頂点の板ポリゴンを、kNumInstanceだけInstance描画を行う
+			commandList->DrawInstanced(UINT(modelData.vertices.size()), kNumInstance, 0, 0);
 
 			//Spriteの描画。変更の必要なものだけ変更する
 			//VBVを設定する
@@ -1991,6 +2035,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 			//描画!(DrawCall/ドローコール)
 			//commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
 
 #ifdef USE_IMGUI
 			//実際のcommandListのImGuiの描画コマンドを積む

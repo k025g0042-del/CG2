@@ -1383,9 +1383,49 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
+	//PSOを生成する
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateParticleDesc{};
+
+	//RootSignature
+	graphicsPipelineStateParticleDesc.pRootSignature = rootSignature.Get();
+
+	//InputLayout
+	graphicsPipelineStateParticleDesc.InputLayout = inputLayoutDesc;
+
+	//VertexShader
+	graphicsPipelineStateParticleDesc.VS = { vertexShaderBlobParticle->GetBufferPointer(),vertexShaderBlobParticle->GetBufferSize() };
+
+	//PixelShader
+	graphicsPipelineStateParticleDesc.PS = { pixelShaderBlobParticle->GetBufferPointer(),pixelShaderBlobParticle->GetBufferSize() };
+
+	//BlendState
+	graphicsPipelineStateParticleDesc.BlendState = blendDesc;
+
+	//RasterizerState
+	graphicsPipelineStateParticleDesc.RasterizerState = rasterizerDesc;
+
+	//書き込むRTVの情報
+	graphicsPipelineStateParticleDesc.NumRenderTargets = 1;
+	graphicsPipelineStateParticleDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+	//利用するトロポジ(形状)のタイプ。三角形
+	graphicsPipelineStateParticleDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+	//どのように画面に色を打ち込むかの設定(気にしなくてよい)
+	graphicsPipelineStateParticleDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateParticleDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	//DepthStencilの設定
+	graphicsPipelineStateParticleDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateParticleDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
 	//実際に生成
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
 	hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
+	assert(SUCCEEDED(hr));
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineParticleState = nullptr;
+	hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateParticleDesc, IID_PPV_ARGS(&graphicsPipelineParticleState));
 	assert(SUCCEEDED(hr));
 
 #pragma region 球の頂点データ
@@ -2012,6 +2052,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			//commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
 
 			//commandList->DrawInstanced(UINT(modelData.vertices.size()), 10, 0, 0);
+
+			//PSOを設定
+			commandList->SetPipelineState(graphicsPipelineParticleState.Get());
 
 			//instancing用のDataを読むためにStructureBufferのSRVを設定する
 			commandList->SetGraphicsRootDescriptorTable(4, instancingSrvHandleGPU);

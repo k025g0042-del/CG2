@@ -26,6 +26,16 @@ public: //メンバ関数
 	/// <returns></returns>
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
 
+	/// <summary>
+	/// 描画前処理
+	/// </summary>
+	void PreDraw();
+
+	/// <summary>
+	/// 描画後処理
+	/// </summary>
+	void PostDraw();
+
 private: //プライベート関数
 	/// <summary>
 	/// デバイスの初期化
@@ -166,6 +176,11 @@ private: //メンバ変数
 	//Fenceの生成
 	Microsoft::WRL::ComPtr<ID3D12Fence> fence;
 
+	//フェンス値
+	uint64_t fenceValue = 0;
+
+	HANDLE fenceEvent = nullptr;
+
 	//ビューポート
 	D3D12_VIEWPORT viewport{};
 
@@ -180,6 +195,10 @@ private: //メンバ変数
 
 	//デフォルトインクルードハンドラの生成
 	IDxcIncludeHandler* includeHandler = nullptr;
+
+	//TransitionBarrierの設定
+	D3D12_RESOURCE_BARRIER barrier{};
+
 
 };
 

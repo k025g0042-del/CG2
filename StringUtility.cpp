@@ -1,3 +1,4 @@
+#include <Windows.h>
 #include "StringUtility.h"
 #include <stringapiset.h>
 

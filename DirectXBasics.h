@@ -1,16 +1,20 @@
 #pragma once
+#include<Windows.h>
+#include"WinAPI.h"
 #include<d3d12.h>
 #include<dxgi1_6.h>
 #include<wrl.h>
-#include"WinAPI.h"
 #include <dxcapi.h>
+
+#include"externals/DirectXTex/DirectXTex.h"
+#include"externals/DirectXTex/d3dx12.h"
 
 class DirectXBasics {
 public: //メンバ関数
 	/// <summary>
 	/// 初期化
 	/// </summary>
-	void Initialize(WinAPI*winApi);
+	void Initialize(WinAPI* winApi);
 
 	/// <summary>
 	/// SRVの指定番号のCPUデスクリプタハンドルを取得する
@@ -35,6 +39,56 @@ public: //メンバ関数
 	/// 描画後処理
 	/// </summary>
 	void PostDraw();
+
+	/// <summary>
+	/// CompileShader関数
+	/// </summary>
+	/// <param name="filePath">CompilerするShaderファイルへのパス</param>
+	/// <param name="profile">Compilerに使用するProfile</param>
+	/// 初期化で生成したもの三つ
+	/// <param name="dxcUtils"></param>
+	/// <param name="dxcCompiler"></param>
+	/// <param name="includeHandler"></param>
+	/// <returns></returns>
+	IDxcBlob* CompileShader(const std::wstring& filePath, const wchar_t* profile);
+
+	/// <summary>
+	/// バッファリソースの生成
+	/// </summary>
+	/// <param name="sizeInBytes"></param>
+	/// <returns></returns>
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
+
+	/// <summary>
+	/// 読み込んだTexture情報をもとにTextureResourceを作る
+	/// </summary>
+	/// <param name="device"></param>
+	/// <param name="metadata"></param>
+	/// <returns></returns>
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metadata);
+
+	/// <summary>
+	/// TextureResourceにデータを転送する
+	/// </summary>
+	/// <param name="texture"></param>
+	/// <param name="mipImages"></param>
+	[[nodiscard]]
+	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImages);
+
+
+	/// <summary>
+	/// デバイスゲッター
+	/// </summary>
+	/// <returns></returns>
+	ID3D12Device* GetDevice() const { return device.Get(); }
+
+	/// <summary>
+	/// コマンドリストゲッター
+	/// </summary>
+	/// <returns></returns>
+	ID3D12GraphicsCommandList* GetCommandList() const { return commandList.Get(); }
+
+	~DirectXBasics();
 
 private: //プライベート関数
 	/// <summary>
@@ -189,7 +243,7 @@ private: //メンバ変数
 
 	//DXCユーティリティの生成
 	IDxcUtils* dxcUtils = nullptr;
-	
+
 	//DXCコンパイラの生成
 	IDxcCompiler3* dxcCompiler = nullptr;
 

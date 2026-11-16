@@ -16,6 +16,30 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{43c1cd0f-9ed8-4365-8b01-7522b87343ca}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\base">
+      <UniqueIdentifier>{81fcfda6-2b69-4947-9cee-14cbfdfad158}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\externalInOutput">
+      <UniqueIdentifier>{3a25efa5-179a-48d7-9547-8a12572c67a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\math">
+      <UniqueIdentifier>{e454e585-eee1-47ae-9a1b-4a57753a50ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\generalPurpose">
+      <UniqueIdentifier>{57c2b96f-6537-4397-8467-91174115dde4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\math">
+      <UniqueIdentifier>{b09d8f0d-41de-4122-b5cc-cb8378473d5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\base">
+      <UniqueIdentifier>{95959d37-f361-4486-88e8-a777c190cea2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\externalInOutput">
+      <UniqueIdentifier>{996f4ee4-dbef-41fd-ab76-d1a29ca43b5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\generalPurpose">
+      <UniqueIdentifier>{b8fe9ed7-4a51-410e-9af6-b34c7bfe46e5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />
@@ -23,12 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Calculation\Matrix.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Calculation\Vector.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="externals\imgui\imgui.cpp">
@@ -52,26 +70,32 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\ExternalInOutput\DebugCamera.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\ExternalInOutput\Input.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="Engine\Base\DirectXBasics.cpp">
+      <Filter>ソース ファイル\base</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Base\WinAPI.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\base</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Base\DirectXBasics.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="Engine\ExternalInOutput\Input.cpp">
+      <Filter>ソース ファイル\externalInOutput</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Base\GeneralPurpose\Logger.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="Engine\ExternalInOutput\DebugCamera.cpp">
+      <Filter>ソース ファイル\externalInOutput</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Base\GeneralPurpose\StringUtility.cpp">
-      <Filter>ソース ファイル</Filter>
+    <ClCompile Include="Engine\Calculation\Vector.cpp">
+      <Filter>ソース ファイル\math</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Calculation\Matrix.cpp">
+      <Filter>ソース ファイル\math</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Base\FixFPS.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\base</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Base\GeneralPurpose\Logger.cpp">
+      <Filter>ソース ファイル\generalPurpose</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Base\GeneralPurpose\StringUtility.cpp">
+      <Filter>ソース ファイル\generalPurpose</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -79,12 +103,6 @@
     <FxCompile Include="resources\Shaders\Object3d.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine\Calculation\Matrix.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Calculation\Vector.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="externals\imgui\imgui.h">
       <Filter>imgui</Filter>
     </ClInclude>
@@ -109,26 +127,32 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\ExternalInOutput\DebugCamera.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\ExternalInOutput\Input.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Base\WinAPI.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Base\DirectXBasics.h">
-      <Filter>ヘッダー ファイル</Filter>
+    <ClInclude Include="Engine\Base\GeneralPurpose\StringUtility.h">
+      <Filter>ヘッダー ファイル\generalPurpose</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Base\GeneralPurpose\Logger.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ヘッダー ファイル\generalPurpose</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Base\GeneralPurpose\StringUtility.h">
-      <Filter>ヘッダー ファイル</Filter>
+    <ClInclude Include="Engine\Base\DirectXBasics.h">
+      <Filter>ヘッダー ファイル\base</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Base\FixFPS.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ヘッダー ファイル\base</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Base\WinAPI.h">
+      <Filter>ヘッダー ファイル\base</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\ExternalInOutput\DebugCamera.h">
+      <Filter>ヘッダー ファイル\externalInOutput</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\ExternalInOutput\Input.h">
+      <Filter>ヘッダー ファイル\externalInOutput</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Calculation\Matrix.h">
+      <Filter>ヘッダー ファイル\math</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Calculation\Vector.h">
+      <Filter>ヘッダー ファイル\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

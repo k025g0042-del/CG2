@@ -5,6 +5,7 @@
 #include<dxgi1_6.h>
 #include<wrl.h>
 #include <dxcapi.h>
+#include"FixFPS.h"
 
 #include"externals/DirectXTex/DirectXTex.h"
 #include"externals/DirectXTex/d3dx12.h"
@@ -88,6 +89,9 @@ public: //メンバ関数
 	/// <returns></returns>
 	ID3D12GraphicsCommandList* GetCommandList() const { return commandList.Get(); }
 
+	/// <summary>
+	/// 開放処理
+	/// </summary>
 	~DirectXBasics();
 
 private: //プライベート関数
@@ -178,6 +182,9 @@ private: //メンバ変数
 	//WindowsAPI
 	WinAPI* winApi = nullptr;
 
+	//FPS固定
+	FixFPS* fixFPS_;
+
 	//D3D12Deviceの生成
 	Microsoft::WRL::ComPtr<ID3D12Device> device;
 
@@ -252,7 +259,6 @@ private: //メンバ変数
 
 	//TransitionBarrierの設定
 	D3D12_RESOURCE_BARRIER barrier{};
-
 
 };
 

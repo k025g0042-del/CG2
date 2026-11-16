@@ -21,6 +21,9 @@ using namespace Logger;
 using namespace StringUtility;
 
 void DirectXBasics::Initialize(WinAPI* winApi) {
+	fixFPS_ = new FixFPS();
+	fixFPS_->Initialize();
+
 	//NULL検出
 	assert(winApi);
 
@@ -155,6 +158,8 @@ void DirectXBasics::PostDraw() {
 		//イベント待つ
 		WaitForSingleObject(fenceEvent, INFINITE);
 	}
+
+	fixFPS_->Update();
 
 	//次のフレーム用のコマンドリストを準備
 	hr = commandAllocator->Reset();

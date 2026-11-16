@@ -1,6 +1,6 @@
 #pragma once
-#include"Vector.h"
-#include"Matrix.h"
+#include"../Calculation/Vector.h"
+#include"../Calculation/Matrix.h"
 #include"Input.h"
 
 /// <summary>

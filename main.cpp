@@ -20,7 +20,6 @@
 #include<dxcapi.h>
 #pragma comment(lib,"dxcompiler.lib")
 
-#include "Matrix.h"
 
 #ifdef USE_IMGUI
 #include"externals/imgui/imgui.h"
@@ -42,12 +41,14 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include<xaudio2.h>
 #pragma comment(lib,"xaudio2.lib")
 
-#include"DebugCamera.h"
-#include"Input.h"
-#include"WinAPI.h"
-#include"DirectXBasics.h"
-#include"Logger.h"
-#include"StringUtility.h"
+#include"Engine/ExternalInOutput/DebugCamera.h"
+#include"Engine/ExternalInOutput/Input.h"
+#include"Engine/Base/WinAPI.h"
+#include"Engine/Base/DirectXBasics.h"
+#include"Engine/Base/GeneralPurpose/Logger.h"
+#include"Engine/Base/GeneralPurpose/StringUtility.h"
+#include"Engine/Calculation/Matrix.h"
+#include"Engine/Calculation/Vector.h"
 
 using namespace StringUtility;
 using namespace Logger;
@@ -731,10 +732,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//Shaderをコンパイルする
-	IDxcBlob* vertexShaderBlob = directXBasics->CompileShader(L"Object3D.VS.hlsl", L"vs_6_0");
+	IDxcBlob* vertexShaderBlob = directXBasics->CompileShader(L"resources/Shaders/Object3D.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 	
-	IDxcBlob* pixelShaderBlob = directXBasics->CompileShader(L"Object3D.PS.hlsl", L"ps_6_0");
+	IDxcBlob* pixelShaderBlob = directXBasics->CompileShader(L"resources/Shaders/Object3D.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	//DepthStencilStateの設定

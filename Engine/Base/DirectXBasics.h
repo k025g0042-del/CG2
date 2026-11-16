@@ -7,8 +7,8 @@
 #include <dxcapi.h>
 #include"FixFPS.h"
 
-#include"externals/DirectXTex/DirectXTex.h"
-#include"externals/DirectXTex/d3dx12.h"
+#include"../../externals/DirectXTex/DirectXTex.h"
+#include"../../externals/DirectXTex/d3dx12.h"
 
 class DirectXBasics {
 public: //メンバ関数

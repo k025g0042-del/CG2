@@ -49,6 +49,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include"Engine/Base/GeneralPurpose/StringUtility.h"
 #include"Engine/Calculation/Matrix.h"
 #include"Engine/Calculation/Vector.h"
+#include <numbers>
 
 using namespace StringUtility;
 using namespace Logger;
@@ -568,8 +569,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	directXBasics->Initialize(winApi);
 
 
-
-
 	//RootSignature作成
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -834,8 +833,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineParticleState = nullptr;
 	hr = directXBasics->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateParticleDesc, IID_PPV_ARGS(&graphicsPipelineParticleState));
 	assert(SUCCEEDED(hr));
-
-
 
 
 #pragma region 球の頂点データ
@@ -1106,14 +1103,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	*transformationMatrixDataSprite = { Matrix::MakeIdentity4x4() ,Matrix::MakeIdentity4x4() };
 
 
-
-
-	
-
-	
-
-	
-	
 	//ポインタ
 	Input* input = nullptr;
 
@@ -1148,10 +1137,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Transform transforms[kNumInstance];
 	for (uint32_t index = 0;index < kNumInstance;++index) {
 		transforms[index].scale = { 1.0f,1.0f,1.0f };
-		transforms[index].rotate = { 0.0f,0.0f,0.0f };
+		transforms[index].rotate = { 0.0f,std::numbers::pi_v<float>,0.0f };
 		transforms[index].translate = { index * 0.1f,index * 0.1f,index * 0.1f };
 	}
-
 
 	//カメラを作る
 	Transform cameraTransform = { { 1.0f,1.0f,1.0f },{ 0.0f,0.0f,0.0f },{ 0.0f,0.0f,-10.0f } };
@@ -1377,7 +1365,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		//描画！(DrawCall/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
 		//directXBasics->GetCommandList()->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
 
-		//directXBasics->GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+		directXBasics->GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
 		//PSOを設定
 		directXBasics->GetCommandList()->SetPipelineState(graphicsPipelineParticleState.Get());

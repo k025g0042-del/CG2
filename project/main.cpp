@@ -179,11 +179,6 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
 }
 
 
-	
-
-
-
-
 /// <summary>
 /// Textureデータを読む
 /// </summary>
@@ -207,17 +202,6 @@ DirectX::ScratchImage LoadTexture(const std::string& filePath) {
 	return mipImages;
 }
 
-
-
-
-
-
-
-//Microsoft::WRL::ComPtr<ID3D12Resource> CreateDepthStencilTextureResource(const Microsoft::WRL::ComPtr<ID3D12Device>& device, int32_t width, int32_t height) {
-//
-//
-//	return resource;
-//}
 
 
 /// <summary>
@@ -591,7 +575,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	//RootParameter作成。複数設定できるので配列。PixelShaderのMaterialとVertexShaderのTransform
-	D3D12_ROOT_PARAMETER rootParameters[4] = {};
+	D3D12_ROOT_PARAMETER rootParameters[5] = {};
 
 	//CBVを使う
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -645,6 +629,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	//レジスタ番号1を使う
 	rootParameters[3].Descriptor.ShaderRegister = 1;
+
+	D3D12_DESCRIPTOR_RANGE descriptorRangeForInstancing[1] = {};
+	descriptorRangeForInstancing[0].BaseShaderRegister = 0; //0から始まる
+	descriptorRangeForInstancing[0].NumDescriptors = 1; //数は1つ
+	descriptorRangeForInstancing[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; //SRVを使う
+	descriptorRangeForInstancing[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	rootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; //DescriptorTableを使う
+	rootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; //VertexShaderで使う
+	rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRangeForInstancing; //Tableの中身の配列を指定
+	rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRangeForInstancing); //Tableで利用する数
+
 
 	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
 
@@ -738,6 +734,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	IDxcBlob* pixelShaderBlob = directXBasics->CompileShader(L"resources/Shaders/Object3D.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
+	IDxcBlob* vertexShaderBlobParticle = directXBasics->CompileShader(L"resources/Shaders/Particle.VS.hlsl", L"vs_6_0");
+	assert(vertexShaderBlobParticle != nullptr);
+
+	IDxcBlob* pixelShaderBlobParticle = directXBasics->CompileShader(L"resources/Shaders/Particle.PS.hlsl", L"ps_6_0");
+	assert(pixelShaderBlobParticle != nullptr);
+
+
 	//DepthStencilStateの設定
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
 
@@ -787,10 +790,53 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
+	//PSOを生成する
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateParticleDesc{};
+
+	//RootSignature
+	graphicsPipelineStateParticleDesc.pRootSignature = rootSignature.Get();
+
+	//InputLayout
+	graphicsPipelineStateParticleDesc.InputLayout = inputLayoutDesc;
+
+	//VertexShader
+	graphicsPipelineStateParticleDesc.VS = { vertexShaderBlobParticle->GetBufferPointer(),vertexShaderBlobParticle->GetBufferSize() };
+
+	//PixelShader
+	graphicsPipelineStateParticleDesc.PS = { pixelShaderBlobParticle->GetBufferPointer(),pixelShaderBlobParticle->GetBufferSize() };
+
+	//BlendState
+	graphicsPipelineStateParticleDesc.BlendState = blendDesc;
+
+	//RasterizerState
+	graphicsPipelineStateParticleDesc.RasterizerState = rasterizerDesc;
+
+	//書き込むRTVの情報
+	graphicsPipelineStateParticleDesc.NumRenderTargets = 1;
+	graphicsPipelineStateParticleDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+	//利用するトロポジ(形状)のタイプ。三角形
+	graphicsPipelineStateParticleDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+	//どのように画面に色を打ち込むかの設定(気にしなくてよい)
+	graphicsPipelineStateParticleDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateParticleDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	//DepthStencilの設定
+	graphicsPipelineStateParticleDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateParticleDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
 	//実際に生成
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
 	hr = directXBasics->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
+
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineParticleState = nullptr;
+	hr = directXBasics->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateParticleDesc, IID_PPV_ARGS(&graphicsPipelineParticleState));
+	assert(SUCCEEDED(hr));
+
+
+
 
 #pragma region 球の頂点データ
 	/*
@@ -900,7 +946,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 #pragma endregion
 
 	//モデル読み込み
-	ModelData modelData = LoadObjFile("resources", "fence.obj");
+	ModelData modelData = LoadObjFile("resources", "plane.obj");
 
 	//頂点リソースを作る
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource =directXBasics->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
@@ -1010,6 +1056,19 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	//単位行列を書き込んでおく
 	*wvpData = { Matrix::MakeIdentity4x4() ,Matrix::MakeIdentity4x4() };
 
+	//パーティクル用のリソース
+	const uint32_t kNumInstance = 10; //インスタンス数
+	//Instancing用のTransformationMatrixリソースを作る
+	Microsoft::WRL::ComPtr<ID3D12Resource> instancingResource = directXBasics->CreateBufferResource(sizeof(TransformationMatrix) * kNumInstance);
+	//書き込むためのアドレス取得
+	TransformationMatrix* instancingData = nullptr;
+	instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&instancingData));
+	//単位行列を書き込んでおく
+	for (uint32_t index = 0;index < kNumInstance;++index) {
+		instancingData[index].WVP = Matrix::MakeIdentity4x4();
+		instancingData[index].World = Matrix::MakeIdentity4x4();
+	}
+
 
 	//平行光源用リソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResouce = directXBasics->CreateBufferResource( sizeof(DirectionalLight));
@@ -1085,6 +1144,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		{ 0.0f,0.0f,0.0f },
 	};
 
+	//Instancing用のTransform
+	Transform transforms[kNumInstance];
+	for (uint32_t index = 0;index < kNumInstance;++index) {
+		transforms[index].scale = { 1.0f,1.0f,1.0f };
+		transforms[index].rotate = { 0.0f,0.0f,0.0f };
+		transforms[index].translate = { index * 0.1f,index * 0.1f,index * 0.1f };
+	}
+
+
 	//カメラを作る
 	Transform cameraTransform = { { 1.0f,1.0f,1.0f },{ 0.0f,0.0f,0.0f },{ 0.0f,0.0f,-10.0f } };
 
@@ -1137,6 +1205,20 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	directXBasics->GetDevice()->CreateShaderResourceView(textureResource[0].Get(), &srvDesc[0], textureSrvHandleCPU[0]);
 
 	directXBasics->GetDevice()->CreateShaderResourceView(textureResource[1].Get(), &srvDesc[1], textureSrvHandleCPU[1]);
+
+	//StructuredBufferのSRVの作成
+	D3D12_SHADER_RESOURCE_VIEW_DESC instancingSrvDesc{};
+	instancingSrvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	instancingSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	instancingSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+	instancingSrvDesc.Buffer.FirstElement = 0;
+	instancingSrvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+	instancingSrvDesc.Buffer.NumElements = kNumInstance;
+	instancingSrvDesc.Buffer.StructureByteStride = sizeof(TransformationMatrix);
+	D3D12_CPU_DESCRIPTOR_HANDLE instancingSrvHandleCPU = directXBasics->GetSRVCPUDescriptorHandle(3);
+	D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU = directXBasics->GetSRVGPUDescriptorHandle(3);
+	directXBasics->GetDevice()->CreateShaderResourceView(instancingResource.Get(), &instancingSrvDesc, instancingSrvHandleCPU);
+
 
 	//SRV切り替え用のフラグ
 	bool useMonsterBall = true;
@@ -1228,6 +1310,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		}
 		Matrix4x4 projectionMatrix = Matrix::MakePerspectiveFovMatrix(0.45f, float(WinAPI::kClientWidth) / float(WinAPI::kClientHeight), 0.1f, 100.0f);
 		Matrix4x4 worldViewProjectionMatrix = Matrix::Multiply(worldMatrix, Matrix::Multiply(viewMatrix, projectionMatrix));
+		Matrix4x4 viewProjectionMatrix = Matrix::Multiply(viewMatrix, projectionMatrix);
 
 		wvpData->WVP = worldViewProjectionMatrix;
 		wvpData->World = worldMatrix;
@@ -1246,6 +1329,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		uvTransformMatrix = Matrix::Multiply(uvTransformMatrix, Matrix::MakeRotateZMatrix(uvTransformSprite.rotate.z));
 		uvTransformMatrix = Matrix::Multiply(uvTransformMatrix, Matrix::MakeTranslateMatrix(uvTransformSprite.translate));
 		materialDataSprite->uvTransform = uvTransformMatrix;
+
+		//Instancing用の行列作成
+		for (uint32_t index = 0;index < kNumInstance;++index) {
+			Matrix4x4 worldinstanceMatrix = Matrix::MakeAffineMatrix(transforms[index].scale, transforms[index].rotate, transforms[index].translate);
+			Matrix4x4 worldViewProjectioninstanceMatrix = Matrix::Multiply(worldinstanceMatrix, viewProjectionMatrix);
+			instancingData[index].WVP = worldViewProjectioninstanceMatrix;
+			instancingData[index].World = worldinstanceMatrix;
+		}
+
 
 #ifdef USE_IMGUI
 		//ImGuiの内部コマンドを生成する
@@ -1285,7 +1377,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		//描画！(DrawCall/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
 		//directXBasics->GetCommandList()->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
 
-		directXBasics->GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+		//directXBasics->GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+
+		//PSOを設定
+		directXBasics->GetCommandList()->SetPipelineState(graphicsPipelineParticleState.Get());
+
+		//instancing用のDataを読むためにStructureBufferのSRVを設定する
+		directXBasics->GetCommandList()->SetGraphicsRootDescriptorTable(4, instancingSrvHandleGPU);
+		//描画！6頂点の板ポリゴンを、kNumInstanceだけInstance描画を行う
+		directXBasics->GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), kNumInstance, 0, 0);
+
 
 		//Spriteの描画。変更の必要なものだけ変更する
 		//VBVを設定する
